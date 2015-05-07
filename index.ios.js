@@ -5,6 +5,13 @@
  * and modified to show the multi-component picker proof of concept created
  * based off of the single-component only one included in the first public
  * release of ReactNative.
+
+ * The first picker shows how to build one dynamically from a data set
+ * and use of the `controlled` prop which makes your js the final aribter
+ * of what the actual selected value is in your picker.
+
+ * The second one is a bare-bones one where the items are set in markup and
+ * nothing fancy goes on: just change events fired when you select something.
  */
 'use strict';
 
@@ -64,16 +71,16 @@ var VedderPicker = React.createClass({
 
     _pickerChange: function (event) {
         /*
-           The 'event.nativeEvent' object has the following attributes on it:
+           The 'event` object has the following attributes on it:
            "target": the reactTag of the UIPicker
            "newIndex": the numeric index of the newly selected row in the changed component
            "component": the numeric index of the changed component in the UIPIcker
            "newValue": the 'value' property of the newly selected row in the changed component. This might not be the same as the label.
         */
 
-        var changedComponent = event.nativeEvent.component;
-        var newRowValue = event.nativeEvent.newValue;
-        var newRowIndex = event.nativeEvent.newIndex;
+        var changedComponent = event.component;
+        var newRowValue = event.newValue;
+        var newRowIndex = event.newIndex;
         var existingRowValue = (changedComponent === MAKE_COMPONENT) ? 
             this.state.selectedMake :
             this.state.selectedModel; 
@@ -100,8 +107,8 @@ var VedderPicker = React.createClass({
 
     // if you don't need to do anything fancy...
     _boringPickerChange: function (event) {
-        var changedComponent = event.nativeEvent.component;
-        var newRowValue = event.nativeEvent.newValue;
+        var changedComponent = event.component;
+        var newRowValue = event.newValue;
         var existingRowSelect = (changedComponent === 0) ? 
             this.state.boringLeftValue :
             this.state.boringRightValue; 
@@ -113,6 +120,10 @@ var VedderPicker = React.createClass({
                 this.setState({boringRightValue: newRowValue});
             }
         }
+    },
+
+    _poemChange: function (event) {
+        console.log("I'm tied directly to the individual component!");
     },
 
 
@@ -141,12 +152,12 @@ var VedderPicker = React.createClass({
 
                 <View>
                     <Text style={styles.headerText}>
-                        Exciting Dynamic Picker!
+                        Exciting Dynamic Controlled Picker!
                     </Text>
                     <Text style={styles.selectionText}>
                         {carSelectionString}
                     </Text>
-                    <VPickerIOS style={styles.picker}  onChange={this._pickerChange}>
+                    <VPickerIOS style={styles.picker}  onChange={this._pickerChange} controlled={true}>
                         {pickerComponents}
                     </VPickerIOS>
                 </View>
@@ -159,7 +170,7 @@ var VedderPicker = React.createClass({
                         {boringSelectionString}
                     </Text>
                     <VPickerIOS style={styles.picker} onChange={this._boringPickerChange}>
-                        <VPickerComponent selectedValue={this.state.boringLeftValue}>
+                        <VPickerComponent selectedValue={this.state.boringLeftValue} onChange={this._poemChange}>
                             <VPickerItem value="How" label="How" />
                             <VPickerItem value="now" label="now" />
                             <VPickerItem value="brown" label="brown" />

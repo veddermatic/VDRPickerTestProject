@@ -34,29 +34,20 @@ var PICKER = 'picker';
 
 var VPickerIOS = React.createClass({
 
+    propTypes: {
+        onChange: React.PropTypes.func, // event handler
+        controlled: React.PropTypes.bool, // if React can override native picker selections after a change.
+    },
+
     mixins: [NativeMethodsMixin],
 
+    // converts child PickerComponent and their Item children into state
+    // that can be sent to  VDRPicker native class.
     _stateFromProps: function (props) {
-        // You could just set the componentData and selectedIndexes directly,
-        // as props on the top level Picker then you can skip all this,
-        // but this assumes you did it with child components
-        // like the existing one. 
-        //
-        // It might makes sense to check if these props exist and skip
-        // iterating over the kids (or see if there are children and skip the
-        // props maybe?) but perhaps always using child elements is the 
-        // more "Reacty" way of doing things.
         var componentData = [];
         var selectedIndexes = [];
 
         ReactChildren.forEach(props.children, function (child, index) {
-
-            // Again, you *could* just do this if you set the items prop directly:
-            //          componentData.push(child.props.items);
-            // but I'm copying the existing picker way of having it always be
-            // done via child elements. (See above!)
-
-            // from each PickerItem...
             var items = []
             var selectedIndex = 0; // sane default
             var checkVal = child.props.selectedValue;
@@ -81,16 +72,33 @@ var VPickerIOS = React.createClass({
     },
 
     _onChange: function (event) {
+        var nativeEvent = event.nativeEvent;
+        // call any change handlers on the component itself
         if (this.props.onChange) {
-            this.props.onChange(event);
+            this.props.onChange(nativeEvent);
         }
         if (this.props.valueChange) {
-            this.props.valueChange(event);
+            this.props.valueChange(nativeEvent);
         }
-        this.refs[PICKER].setNativeProps({
-            selectedIndexes: this.state.selectedIndexes,
-            componentData: this.state.componentData,
+        // call any change handlers on the child component picker that changed
+        // if it has one. Doing it this way rather than storing references
+        // to child nodes and their onChage props in _stateFromProps because 
+        // React docs imply that may not be a good idea.
+        ReactChildren.forEach(this.props.children, function (child, idx) {
+            if (idx === nativeEvent.component && child.props.onChange) {
+                child.props.onChange(nativeEvent);
+            }
         });
+
+        var nativeProps = {
+            componentData: this.state.componentData,
+        };
+        // if we are a controlled instance, we tell the native component what 
+        // it's value should be after any change.
+        if (this.props.controlled) {
+            nativeProps.selectedIndexes = this.state.selectedIndexes;
+        }
+        this.refs[PICKER].setNativeProps(nativeProps);
     },
 
     render: function() {
@@ -109,21 +117,25 @@ var VPickerIOS = React.createClass({
 
 });
 
+
+// represents a "section" of a picker.
 VPickerIOS.PickerComponent = React.createClass({
     propTypes: {
         items: React.PropTypes.array,
         selectedIndex: React.PropTypes.number,
+        onChange: React.PropTypes.func,
     },
     render: function () {
         return null;
     },
 });
 
-// almost directly from FB codebase
+// represents an item in a picker section
+// the `value` is used for setting / getting selection
 VPickerIOS.Item = React.createClass({
   propTypes: {
-    value: React.PropTypes.any, // string or integer basically
-    label: React.PropTypes.string,
+    value: React.PropTypes.any.isRequired, // string or integer basically
+    label: React.PropTypes.string.isRequired, // for display
   },
 
   render: function() {
